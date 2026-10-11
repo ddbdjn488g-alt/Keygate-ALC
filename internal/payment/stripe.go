@@ -28,7 +28,6 @@ import (
 	"github.com/stripe/stripe-go/v82/subscription"
 	"github.com/stripe/stripe-go/v82/webhook"
 
-	"github.com/tabloy/keygate/internal/license"
 	"github.com/tabloy/keygate/internal/model"
 	"github.com/tabloy/keygate/internal/service"
 	"github.com/tabloy/keygate/internal/store"
@@ -736,11 +735,22 @@ func (h *StripeHandler) fulfillCheckout(ctx context.Context, email, customerID, 
 		status = model.StatusTrialing
 	}
 
+	licenseKey, kerr := h.Store.NewLicenseKey(ctx, plan.ProductID)
+	if kerr != nil {
+		slog.Error("stripe checkout: failed to generate license key", "product_id", plan.ProductID, "error", kerr)
+		if sessionID != "" {
+			if derr := h.release(ctx, fulfilledSessionProvider, sessionClaimProvider, sessionID); derr != nil {
+				slog.Error("stripe checkout: failed to release session claim", "session_id", sessionID, "error", derr)
+			}
+		}
+		return false, fmt.Errorf("generate license key: %w", kerr)
+	}
+
 	lic := &model.License{
 		ProductID:        plan.ProductID,
 		PlanID:           plan.ID,
 		Email:            email,
-		LicenseKey:       license.GenerateKey(""),
+		LicenseKey:       licenseKey,
 		PaymentProvider:  "stripe",
 		StripeCustomerID: customerID,
 		Status:           status,

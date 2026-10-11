@@ -335,6 +335,9 @@ func main() {
 	//
 	// Subkeys are purpose-isolated — ciphertext from one cannot decrypt
 	// under another.
+	// Key format per product (ALC-format keys only for the configured product IDs).
+	db.KeyPolicy = license.NewKeyPolicy(cfg.ALCKeyProductIDs)
+
 	var releaseSigner *service.ReleaseSigningService
 	if cfg.IsMasterEncryptionKeyConfigured() {
 		masterRaw, err := hex.DecodeString(cfg.ReleaseKeyEncryptionKey)

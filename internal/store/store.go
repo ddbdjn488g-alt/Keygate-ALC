@@ -30,6 +30,9 @@ type Store struct {
 	// column. Reads prefer the encrypted column with fallback to plaintext.
 	// nil means encryption is disabled (legacy mode).
 	LicenseKeyAEAD *crypto.AESGCM
+	// KeyPolicy picks the key format per product (zero value: default
+	// Keygate keys everywhere); see license.KeyPolicy.
+	KeyPolicy license.KeyPolicy
 	// feedTTL is how long this install signs the presigned links
 	// inside a public feed for; see SetFeedURLTTL.
 	feedTTL time.Duration
@@ -519,6 +522,37 @@ func (s *Store) prepareLicenseForInsert(l *model.License) error {
 		l.LicenseKeyEncrypted = ct
 	}
 	return nil
+}
+
+// maxKeyAttempts bounds the retries when a freshly generated key already
+// exists (ALC keys carry only ~40 random bits, so a collision is possible).
+const maxKeyAttempts = 8
+
+// ErrKeyExhausted is returned when no unused key was found within
+// maxKeyAttempts generations.
+var ErrKeyExhausted = errors.New("could not generate a unique license key")
+
+// NewLicenseKey generates a key in the format configured for productID and
+// makes sure its hash is not already stored, retrying a bounded number of
+// times. The UNIQUE indexes on licenses remain the final guarantee.
+func (s *Store) NewLicenseKey(ctx context.Context, productID string) (string, error) {
+	return s.newLicenseKey(ctx, productID, func(ctx context.Context, keyHash string) (bool, error) {
+		return s.DB.NewSelect().Model((*model.License)(nil)).Where("key_hash = ?", keyHash).Exists(ctx)
+	})
+}
+
+func (s *Store) newLicenseKey(ctx context.Context, productID string, hashExists func(context.Context, string) (bool, error)) (string, error) {
+	for range maxKeyAttempts {
+		key := s.KeyPolicy.Generate(productID)
+		used, err := hashExists(ctx, license.HashKey(key))
+		if err != nil {
+			return "", err
+		}
+		if !used {
+			return key, nil
+		}
+	}
+	return "", ErrKeyExhausted
 }
 
 func (s *Store) CreateLicense(ctx context.Context, l *model.License) error {

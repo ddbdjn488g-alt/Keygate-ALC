@@ -22,6 +22,11 @@ type Config struct {
 	JWTSecret         string
 	LicenseSigningKey string
 
+	// ALCKeyProductIDs lists the real product IDs whose new licenses get
+	// ALC-format keys (ALC-XXXX-XXXX-CCCC, ALC_KEY_PRODUCT_IDS, comma
+	// separated). Empty: every product keeps the default Keygate key.
+	ALCKeyProductIDs []string
+
 	StripeSecretKey     string
 	StripeWebhookSecret string
 	// StripeLivemode tells the webhook handler which environment to
@@ -124,6 +129,12 @@ func Load() (*Config, error) {
 
 		StripeSecretKey:     os.Getenv("STRIPE_SECRET_KEY"),
 		StripeWebhookSecret: os.Getenv("STRIPE_WEBHOOK_SECRET"),
+	}
+
+	for _, id := range strings.Split(os.Getenv("ALC_KEY_PRODUCT_IDS"), ",") {
+		if id = strings.TrimSpace(id); id != "" {
+			cfg.ALCKeyProductIDs = append(cfg.ALCKeyProductIDs, id)
+		}
 	}
 
 	envVal, envSet := os.LookupEnv("STRIPE_LIVEMODE")

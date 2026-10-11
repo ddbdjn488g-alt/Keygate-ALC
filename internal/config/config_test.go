@@ -2,6 +2,7 @@ package config
 
 import (
 	"slices"
+	"strings"
 	"testing"
 )
 
@@ -208,5 +209,19 @@ func TestStripeLivemodeDerivation(t *testing.T) {
 					tc.envVal, tc.envSet, tc.secretKey, got, tc.want)
 			}
 		})
+	}
+}
+
+func TestALCKeyProductIDsFromEnv(t *testing.T) {
+	t.Setenv("ALC_KEY_PRODUCT_IDS", " prod-a , ,prod-b ")
+	t.Setenv("DATABASE_URL", "postgres://x")
+	t.Setenv("JWT_SECRET", strings.Repeat("s", 48))
+	t.Setenv("LICENSE_SIGNING_KEY", "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef")
+	cfg, err := Load()
+	if err != nil {
+		t.Fatalf("Load: %v", err)
+	}
+	if len(cfg.ALCKeyProductIDs) != 2 || cfg.ALCKeyProductIDs[0] != "prod-a" || cfg.ALCKeyProductIDs[1] != "prod-b" {
+		t.Fatalf("ALCKeyProductIDs = %v", cfg.ALCKeyProductIDs)
 	}
 }

@@ -18,7 +18,6 @@ import (
 	"github.com/stripe/stripe-go/v82/subscription"
 	"github.com/uptrace/bun"
 
-	"github.com/tabloy/keygate/internal/license"
 	"github.com/tabloy/keygate/internal/model"
 	"github.com/tabloy/keygate/internal/service"
 	"github.com/tabloy/keygate/internal/store"
@@ -2042,11 +2041,18 @@ func (h *AdminHandler) CreateLicense(c *gin.Context) {
 		status = model.StatusTrialing
 	}
 
+	licenseKey, err := h.Store.NewLicenseKey(c, req.ProductID)
+	if err != nil {
+		slog.Error("create license: generate key", "product_id", req.ProductID, "error", err)
+		response.Internal(c, err)
+		return
+	}
+
 	l := &model.License{
 		ProductID:           req.ProductID,
 		PlanID:              req.PlanID,
 		Email:               req.Email,
-		LicenseKey:          license.GenerateKey(""),
+		LicenseKey:          licenseKey,
 		Status:              status,
 		Notes:               req.Notes,
 		ExternalCustomerID:  req.ExternalCustomerID,
