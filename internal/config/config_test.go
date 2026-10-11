@@ -253,3 +253,46 @@ func TestALCKeyPolicyTargetsOnlyConfiguredProduct(t *testing.T) {
 		}
 	}
 }
+
+// A hosting dashboard may hand the variable over with surrounding quotes,
+// padding, a trailing newline or another separator. The product ID must
+// still be recognised: otherwise the policy silently falls back to KG- keys.
+func TestALCKeyProductIDsTolerantParsing(t *testing.T) {
+	const id = "afa82897-e92c-4cfe-9d9c-e04e198961b4"
+	for name, raw := range map[string]string{
+		"plain":            id,
+		"double quotes":    `"` + id + `"`,
+		"single quotes":    `'` + id + `'`,
+		"padded":           "  " + id + "  ",
+		"trailing newline": id + "\n",
+		"crlf":             id + "\r\n",
+		"semicolon list":   "other-id;" + id,
+		"space list":       "other-id " + id,
+		"comma + quotes":   `"other-id", "` + id + `"`,
+		"BOM":              "\ufeff" + id,
+	} {
+		t.Run(name, func(t *testing.T) {
+			t.Setenv("ALC_KEY_PRODUCT_IDS", raw)
+			t.Setenv("DATABASE_URL", "postgres://x")
+			t.Setenv("JWT_SECRET", strings.Repeat("s", 48))
+			t.Setenv("LICENSE_SIGNING_KEY", "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef")
+			cfg, err := Load()
+			if err != nil {
+				t.Fatalf("Load: %v", err)
+			}
+			if !license.NewKeyPolicy(cfg.ALCKeyProductIDs).UsesALCFormat(id) {
+				t.Fatalf("ALC product not recognised from %q (parsed %q)", raw, cfg.ALCKeyProductIDs)
+			}
+		})
+	}
+	t.Run("empty", func(t *testing.T) {
+		t.Setenv("ALC_KEY_PRODUCT_IDS", " \"\" ")
+		t.Setenv("DATABASE_URL", "postgres://x")
+		t.Setenv("JWT_SECRET", strings.Repeat("s", 48))
+		t.Setenv("LICENSE_SIGNING_KEY", "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef")
+		cfg, err := Load()
+		if err != nil || len(cfg.ALCKeyProductIDs) != 0 {
+			t.Fatalf("empty value must yield no product: %v %v", cfg.ALCKeyProductIDs, err)
+		}
+	})
+}

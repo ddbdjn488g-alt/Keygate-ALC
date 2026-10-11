@@ -4,6 +4,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/tabloy/keygate/internal/crypto"
 	"github.com/tabloy/keygate/internal/license"
 	"github.com/tabloy/keygate/internal/model"
 )
@@ -18,6 +19,8 @@ func TestALCKeyStoredAndFound(t *testing.T) {
 	alcPlan := seedPlan(t, s, ctx, "alckey", "perpetual")
 	otherPlan := seedPlan(t, s, ctx, "otherkey", "perpetual")
 	s.KeyPolicy = license.NewKeyPolicy([]string{alcPlan.ProductID})
+	// Encryption at rest enabled, as on the deployed server.
+	s.LicenseKeyAEAD = crypto.MustDeriveAEAD([]byte("0123456789abcdef0123456789abcdef"), "license-key")
 
 	key, err := s.NewLicenseKey(ctx, alcPlan.ProductID)
 	if err != nil || !license.ValidALCKey(key) {
@@ -28,6 +31,9 @@ func TestALCKeyStoredAndFound(t *testing.T) {
 		t.Fatalf("create license: %v", err)
 	}
 
+	if got := s.DecryptLicenseKey(lic); got != key {
+		t.Fatal("encrypted copy must decrypt to the issued key")
+	}
 	// Lookup is case/whitespace-insensitive, like the activation endpoints.
 	for _, q := range []string{key, strings.ToLower(key), "  " + key + "  "} {
 		found, err := s.FindLicenseByKey(ctx, q)

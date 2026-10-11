@@ -12,6 +12,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 
+	"github.com/tabloy/keygate/internal/config"
 	"github.com/tabloy/keygate/internal/license"
 	"github.com/tabloy/keygate/internal/model"
 	"github.com/tabloy/keygate/internal/store"
@@ -48,7 +49,9 @@ func TestAdminCreateLicenseKeyFormatPerProduct(t *testing.T) {
 		return plan
 	}
 	alcPlan, otherPlan := mk("alc"), mk("other")
-	s.KeyPolicy = license.NewKeyPolicy([]string{alcPlan.ProductID})
+	// Same chain as the server: environment value (quoted and padded, as a
+	// hosting dashboard may deliver it) -> config parsing -> policy -> handler.
+	s.KeyPolicy = license.NewKeyPolicy(config.ParseProductIDs(" \"" + alcPlan.ProductID + "\"\n"))
 	h := &AdminHandler{Store: s}
 
 	create := func(plan *model.Plan, email string) (id, key string) {

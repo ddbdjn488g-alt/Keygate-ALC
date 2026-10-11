@@ -549,6 +549,12 @@ func (s *Store) newLicenseKey(ctx context.Context, productID string, hashExists 
 			return "", err
 		}
 		if !used {
+			// Which format was chosen (never the key itself).
+			format := "kg"
+			if s.KeyPolicy.UsesALCFormat(productID) {
+				format = "alc"
+			}
+			slog.Info("license key generated", "format", format, "product_id", productID)
 			return key, nil
 		}
 	}

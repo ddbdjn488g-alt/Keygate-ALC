@@ -8,6 +8,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"unicode"
 
 	"github.com/joho/godotenv"
 )
@@ -131,11 +132,7 @@ func Load() (*Config, error) {
 		StripeWebhookSecret: os.Getenv("STRIPE_WEBHOOK_SECRET"),
 	}
 
-	for _, id := range strings.Split(os.Getenv("ALC_KEY_PRODUCT_IDS"), ",") {
-		if id = strings.TrimSpace(id); id != "" {
-			cfg.ALCKeyProductIDs = append(cfg.ALCKeyProductIDs, id)
-		}
-	}
+	cfg.ALCKeyProductIDs = ParseProductIDs(os.Getenv("ALC_KEY_PRODUCT_IDS"))
 
 	envVal, envSet := os.LookupEnv("STRIPE_LIVEMODE")
 	cfg.StripeLivemode = deriveLivemode(envVal, envSet, cfg.StripeSecretKey)
@@ -194,6 +191,32 @@ func Load() (*Config, error) {
 	}
 
 	return cfg, nil
+}
+
+// ParseProductIDs reads a list of product IDs from an environment value. Hosting
+// dashboards and .env files commonly hand values over with surrounding quotes,
+// padding, a trailing newline, a BOM or a different separator, and a product ID
+// that no longer matches exactly silently falls back to the default key format.
+// Entries are separated by commas, semicolons or whitespace; quotes, a BOM and
+// zero-width characters are stripped. Matching stays EXACT afterwards.
+func ParseProductIDs(raw string) []string {
+	clean := strings.Map(func(r rune) rune {
+		switch r {
+		case '\ufeff', '\u200b', '\u200c', '\u200d', '\u2060':
+			return -1
+		}
+		return r
+	}, raw)
+	fields := strings.FieldsFunc(clean, func(r rune) bool {
+		return r == ',' || r == ';' || unicode.IsSpace(r)
+	})
+	var ids []string
+	for _, f := range fields {
+		if f = strings.Trim(f, "\"'`"); f != "" {
+			ids = append(ids, f)
+		}
+	}
+	return ids
 }
 
 func (c *Config) normalizedEnv() string {

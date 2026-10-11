@@ -67,6 +67,19 @@ utilisation hors ligne permanente ensuite (jetons signes), une seule machine a l
 - Blitz (variable `ALC_KEY_PRODUCT_IDS`, deploiement, journaux), console d'administration Keygate (creation de licence, reglages e-mail) et
   ALC Desktop : aucun acces pilotable depuis cet environnement (pas de session connectee, pas d'outil d'automatisation).
 
+### Incident : cle `KG-` emise alors que `ALC_KEY_PRODUCT_IDS` est defini (2026-10-11, Blitz `keygate-alc-test`)
+- Chemin de code verifie : `config.Load` -> `ALCKeyProductIDs` -> `main.go` (`db.KeyPolicy`) -> `NewAdminHandler(db, ...)` (meme pointeur) ->
+  `AdminHandler.CreateLicense` -> `Store.NewLicenseKey(productID)` -> `KeyPolicy.Generate`. Le chemin est correct : le test d'integration
+  `TestAdminCreateLicenseKeyFormatPerProduct` (PostgreSQL temporaire) produit bien une cle `ALC-` pour le produit configure.
+- Cause reproduite dans le code : la lecture de la variable ne tolerait ni guillemets, ni espaces/retours a la ligne, ni BOM, ni autre separateur ;
+  une valeur entouree de guillemets (frequente dans un tableau de bord ou un `.env`) ne correspondait plus exactement a l'identifiant et retombait
+  silencieusement sur `KG-`. Test de reproduction : `TestALCKeyProductIDsTolerantParsing` (7 sous-cas en echec avant correction).
+- Correction : `config.ParseProductIDs` (separateurs virgule / point-virgule / espaces ; guillemets, BOM et caracteres de largeur nulle retires ;
+  comparaison ensuite EXACTE, pas de detection par le nom). Journaux ajoutes (sans cle) : au demarrage "license key format: ..." et a chaque
+  emission "license key generated format=alc|kg product_id=...".
+- NON etabli : que cette cause soit celle de Blitz (valeur reelle de la variable et commit construit non visibles depuis cet environnement).
+  L'absence de la ligne de demarrage "license key format" dans les journaux Blitz prouverait que le code deploye n'est pas celui de la branche.
+
 ## 4. Decisions prises
 - Le format historique d'ALC fait reference ; Keygate s'adapte, ALC n'est pas modifie.
 - Format ALC limite aux produits listes dans `ALC_KEY_PRODUCT_IDS` (identifiants reels, pas de deduction par le nom).

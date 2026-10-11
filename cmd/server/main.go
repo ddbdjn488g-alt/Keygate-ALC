@@ -337,6 +337,13 @@ func main() {
 	// under another.
 	// Key format per product (ALC-format keys only for the configured product IDs).
 	db.KeyPolicy = license.NewKeyPolicy(cfg.ALCKeyProductIDs)
+	if len(cfg.ALCKeyProductIDs) > 0 {
+		logger.Info("license key format: ALC format enabled", "products", cfg.ALCKeyProductIDs)
+	} else if os.Getenv("ALC_KEY_PRODUCT_IDS") != "" {
+		logger.Warn("license key format: ALC_KEY_PRODUCT_IDS is set but contains no product ID; default KG- keys everywhere")
+	} else {
+		logger.Info("license key format: default KG- keys for every product (ALC_KEY_PRODUCT_IDS not set)")
+	}
 
 	var releaseSigner *service.ReleaseSigningService
 	if cfg.IsMasterEncryptionKeyConfigured() {
