@@ -4,6 +4,8 @@ import (
 	"slices"
 	"strings"
 	"testing"
+
+	"github.com/tabloy/keygate/internal/license"
 )
 
 func TestIsDevLoginAllowed(t *testing.T) {
@@ -223,5 +225,31 @@ func TestALCKeyProductIDsFromEnv(t *testing.T) {
 	}
 	if len(cfg.ALCKeyProductIDs) != 2 || cfg.ALCKeyProductIDs[0] != "prod-a" || cfg.ALCKeyProductIDs[1] != "prod-b" {
 		t.Fatalf("ALCKeyProductIDs = %v", cfg.ALCKeyProductIDs)
+	}
+}
+
+// The ALC product (real Keygate product ID) is the only one that switches to
+// ALC-format keys; any other product ID keeps the default format.
+func TestALCKeyPolicyTargetsOnlyConfiguredProduct(t *testing.T) {
+	const alcProductID = "afa82897-e92c-4cfe-9d9c-e04e198961b4"
+	t.Setenv("ALC_KEY_PRODUCT_IDS", alcProductID)
+	t.Setenv("DATABASE_URL", "postgres://x")
+	t.Setenv("JWT_SECRET", strings.Repeat("s", 48))
+	t.Setenv("LICENSE_SIGNING_KEY", "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef")
+	cfg, err := Load()
+	if err != nil {
+		t.Fatalf("Load: %v", err)
+	}
+	p := license.NewKeyPolicy(cfg.ALCKeyProductIDs)
+	if !license.ValidALCKey(p.Generate(alcProductID)) {
+		t.Fatal("the ALC product must get ALC-format keys")
+	}
+	for _, other := range []string{"afa82897-e92c-4cfe-9d9c-e04e198961b5", "AFA82897-E92C-4CFE-9D9C-E04E198961B4", "", "autotune-live-control"} {
+		if p.UsesALCFormat(other) {
+			t.Fatalf("product %q must keep the default key format", other)
+		}
+		if !strings.HasPrefix(p.Generate(other), "KG-") {
+			t.Fatalf("product %q must get a KG- key", other)
+		}
 	}
 }
