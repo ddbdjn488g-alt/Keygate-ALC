@@ -16,8 +16,8 @@ utilisation hors ligne permanente ensuite (jetons signes), une seule machine a l
 |---|---|
 | Depot Keygate local | `/Users/user/Downloads/Keygate-ALC`, origine `tabloy/keygate` |
 | Base de la branche | `4c27a4d` (HEAD de `main` local au moment de l'audit, arbre propre) |
-| Branche de travail | `feature/alc-license-key-format` (locale, NON poussee) |
-| Commits locaux | `cc35ede` (format de cles), `4dd4859` (tests d'integration) ; ce fichier dans un 3e commit local |
+| Branche de travail | `feature/alc-license-key-format` ; poussee sur le fork `ddbdjn488g-alt/Keygate-ALC` (remote `fork`), VERIFIE par `git ls-remote` ; `main` du fork inchange (`4c27a4d`) ; rien pousse sur `origin` (`tabloy/keygate`) |
+| Commits de la branche | `cc35ede` (format de cles), `4dd4859` (tests d'integration), `5f53c3d` et suivants (ce fichier de suivi) |
 | Depot ALC | non modifie par ce travail |
 
 ### Ce qu'ALC fait aujourd'hui (lecture de `Source/LicenseManager.h`, `Source/LicenseScreen.h`)
@@ -58,9 +58,12 @@ utilisation hors ligne permanente ensuite (jetons signes), une seule machine a l
 - La page SETTINGS > Email du Keygate de test propose le fournisseur "Cloudflare Email" (HTTPS) ; l'envoi par SMTP depend des variables d'environnement
   (`SMTP_*`) et les ports SMTP sont bloques sur Blitz. Aucune configuration d'e-mail n'a ete enregistree par nous.
 
+### Instance Blitz (lecture seule, API publique, 2026-10-11)
+- `GET /api/v1/version` renvoie `version: dev`, `commit: unknown` (binaire construit sans ldflags) : le commit deploye ne peut PAS etre lu depuis l'API.
+- `GET /health` : base de donnees `ok`.
+
 ### Blocages rencontres pour CDC-KEYGATE-02 (constates, non contournes)
-- Poussee de la branche : `origin` est `tabloy/keygate` (amont) sans droit d'ecriture ni identifiants ; aucun fork du compte `ddbdjn488g-alt`
-  n'existe (`ls-remote` : "Repository not found" pour `keygate`, `Keygate-ALC`, `keygate-alc`). Il faut un fork cree depuis l'interface GitHub.
+- (leve) Poussee de la branche : le fork `ddbdjn488g-alt/Keygate-ALC` existe maintenant et la branche y est poussee.
 - Blitz (variable `ALC_KEY_PRODUCT_IDS`, deploiement, journaux), console d'administration Keygate (creation de licence, reglages e-mail) et
   ALC Desktop : aucun acces pilotable depuis cet environnement (pas de session connectee, pas d'outil d'automatisation).
 
@@ -83,9 +86,10 @@ utilisation hors ligne permanente ensuite (jetons signes), une seule machine a l
 - Cette modification rend les cles ACCEPTEES par le validateur actuel ; ce n'est pas un systeme de licences complet.
 
 ## 7. Taches en attente (ordre de priorite)
-1. Priorite 1 : confirmer la version de base reellement deployee sur Blitz (lien digest <-> construction `4c27a4d`) ; creer un fork GitHub de `tabloy/keygate`
-   sous `ddbdjn488g-alt`, y pousser la branche, la deployer sur Blitz avec `ALC_KEY_PRODUCT_IDS`, creer une NOUVELLE licence de test, verifier le prefixe `ALC-`,
-   puis tester la cle dans ALC Desktop (preuve limitee : format + checksum acceptes localement).
+1. Priorite 1 (action humaine : aucun acces a Blitz depuis cet environnement) : dans Blitz, pointer le deploiement sur le fork
+   `ddbdjn488g-alt/Keygate-ALC`, branche `feature/alc-license-key-format` ; definir `ALC_KEY_PRODUCT_IDS=afa82897-e92c-4cfe-9d9c-e04e198961b4` ;
+   redeployer ; creer une NOUVELLE licence de test pour ALC ; verifier le prefixe `ALC-` ; tester la cle dans ALC Desktop
+   (preuve limitee : format + checksum acceptes localement). Ne pas toucher a la licence `KG-` existante.
 2. Priorite 2 : rejouer le test d'integration PostgreSQL dans une base de test dediee de l'equipe (le test fourni cree ses propres lignes).
 3. Priorite 3 : relier ALC a Keygate (activation en ligne, jeton signe, verification locale) : analyse puis CDC distinct.
 4. Priorite 4 : tester limite d'une machine, refus d'une 2e activation, transfert controle, persistance hors ligne, revocation / reactivation ; documenter les limites.
