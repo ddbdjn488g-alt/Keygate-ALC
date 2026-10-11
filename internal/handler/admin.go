@@ -18,6 +18,7 @@ import (
 	"github.com/stripe/stripe-go/v82/subscription"
 	"github.com/uptrace/bun"
 
+	"github.com/tabloy/keygate/internal/license"
 	"github.com/tabloy/keygate/internal/model"
 	"github.com/tabloy/keygate/internal/service"
 	"github.com/tabloy/keygate/internal/store"
@@ -1934,12 +1935,16 @@ func (h *AdminHandler) ListLicenses(c *gin.Context) {
 	// admin to tell two rows apart, useless to anyone who intercepts
 	// the payload. The key itself comes from RevealLicenseKey.
 	hints := make(map[string]string, len(licenses))
+	prefixes := make(map[string]string, len(licenses))
 	for _, l := range licenses {
 		if hint := h.licenseKeyHint(l); hint != "" {
 			hints[l.ID] = hint
 		}
+		if p := h.licenseKeyPrefix(l); p != "" {
+			prefixes[l.ID] = p
+		}
 	}
-	listOK(c, "licenses", licenses, total, page, gin.H{"license_key_hints": hints})
+	listOK(c, "licenses", licenses, total, page, gin.H{"license_key_hints": hints, "license_key_prefixes": prefixes})
 }
 
 func (h *AdminHandler) GetLicense(c *gin.Context) {
@@ -1957,7 +1962,7 @@ func (h *AdminHandler) GetLicense(c *gin.Context) {
 	// deliberate break here is that license_key is gone. The hint
 	// rides alongside them; the key itself is one explicit request
 	// away via RevealLicenseKey.
-	out := licenseWithHint{License: l, LicenseKeyHint: h.licenseKeyHint(l), KeyUsable: true}
+	out := licenseWithHint{License: l, LicenseKeyHint: h.licenseKeyHint(l), LicenseKeyPrefix: h.licenseKeyPrefix(l), KeyUsable: true}
 	if err := service.LicenseUsable(l); err != nil {
 		out.KeyUsable, out.KeyUnusableReason = false, apperrCode(err)
 	}
@@ -2154,6 +2159,9 @@ type licenseWithKey struct {
 type licenseWithHint struct {
 	*model.License
 	LicenseKeyHint string `json:"license_key_hint"`
+	// LicenseKeyPrefix is the key's own format prefix ("ALC", "KG"): the
+	// masked label shown in the UI must match the real key format.
+	LicenseKeyPrefix string `json:"license_key_prefix,omitempty"`
 	// KeyUsable says whether the key works right now (the activation
 	// rule); KeyUnusableReason is its error code when not. The admin UI
 	// offers to resend the key only when it works.
@@ -2169,6 +2177,12 @@ func apperrCode(err error) string {
 		return ae.Code
 	}
 	return "LICENSE_INVALID"
+}
+
+// licenseKeyPrefix is the key's format prefix ("ALC" or "KG") — a format
+// marker common to every key, not a credential.
+func (h *AdminHandler) licenseKeyPrefix(l *model.License) string {
+	return license.KeyPrefix(h.Store.DecryptLicenseKey(l))
 }
 
 // licenseKeyHint is the last four characters of a key — a row label,
@@ -3090,15 +3104,20 @@ func (h *AdminHandler) GetUserDetail(c *gin.Context) {
 	// license is which, not the credential itself. The detail keeps
 	// its existing shape and the hints ride alongside it.
 	hints := make(map[string]string, len(detail.Licenses))
+	prefixes := make(map[string]string, len(detail.Licenses))
 	for _, l := range detail.Licenses {
 		if hint := h.licenseKeyHint(l); hint != "" {
 			hints[l.ID] = hint
 		}
+		if p := h.licenseKeyPrefix(l); p != "" {
+			prefixes[l.ID] = p
+		}
 	}
 	response.OK(c, struct {
 		*store.UserDetail
-		LicenseKeyHints map[string]string `json:"license_key_hints"`
-	}{UserDetail: detail, LicenseKeyHints: hints})
+		LicenseKeyHints    map[string]string `json:"license_key_hints"`
+		LicenseKeyPrefixes map[string]string `json:"license_key_prefixes"`
+	}{UserDetail: detail, LicenseKeyHints: hints, LicenseKeyPrefixes: prefixes})
 }
 
 // ─── Addons ───

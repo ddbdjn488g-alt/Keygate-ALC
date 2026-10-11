@@ -285,12 +285,13 @@ export const admin = {
       limit: number
       offset: number
       license_key_hints: Record<string, string>
+      license_key_prefixes?: Record<string, string>
     }>(`/admin/licenses?${q}`)
   },
   // The licence keeps its own shape; only the key is gone, replaced by
   // a last-four hint.
   getLicense: (id: string) =>
-    get<License & { license_key_hint: string; key_usable: boolean; key_unusable_reason?: string }>(
+    get<License & { license_key_hint: string; license_key_prefix?: string; key_usable: boolean; key_unusable_reason?: string }>(
       `/admin/licenses/${id}`,
     ),
   // The key is never in a list or detail payload — one explicit
@@ -486,7 +487,10 @@ export const admin = {
     return get<AnalyticsInsights>(`/admin/analytics/insights?${q}`)
   },
 
-  getUserDetail: (id: string) => get<UserDetail & { license_key_hints: Record<string, string> }>(`/admin/users/${id}`),
+  getUserDetail: (id: string) =>
+    get<UserDetail & { license_key_hints: Record<string, string>; license_key_prefixes?: Record<string, string> }>(
+      `/admin/users/${id}`,
+    ),
 
   // Settings
   getSettings: () =>

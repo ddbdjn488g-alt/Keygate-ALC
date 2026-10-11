@@ -262,7 +262,9 @@ function CustomerDetailDialog({
                               one at a time from the licenses page, and
                               each reveal is audited. */}
                             <code className="text-xs bg-muted px-1.5 py-0.5 rounded font-mono">
-                              {data?.license_key_hints?.[l.id] ? `KG-••••-${data.license_key_hints[l.id]}` : "••••"}
+                              {data?.license_key_hints?.[l.id]
+                                ? `${data?.license_key_prefixes?.[l.id] || "KG"}-••••-${data.license_key_hints[l.id]}`
+                                : "••••"}
                             </code>
                           </DataTableCell>
                           <DataTableCell className="text-xs text-muted-foreground">

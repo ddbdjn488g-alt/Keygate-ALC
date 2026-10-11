@@ -85,8 +85,10 @@ function localDateValue(iso: string): string {
 
 // Rows show only the tail of a key. The full value never rides in a
 // list or detail payload — it is fetched per reveal and audited.
-function maskKey(hint?: string) {
-  return hint ? `KG-••••-${hint}` : "••••"
+// The prefix comes from the key itself (ALC-…, KG-…), so the masked label
+// matches the real format; "KG" is only the fallback for an older server.
+function maskKey(hint?: string, prefix?: string) {
+  return hint ? `${prefix || "KG"}-••••-${hint}` : "••••"
 }
 
 export default function LicensesPage() {
@@ -250,7 +252,7 @@ export default function LicensesPage() {
                       <DataTableCell className="font-medium">{lic.email}</DataTableCell>
                       <DataTableCell>
                         <code className="text-xs bg-muted px-1.5 py-0.5 rounded">
-                          {maskKey(data?.license_key_hints?.[lic.id])}
+                          {maskKey(data?.license_key_hints?.[lic.id], data?.license_key_prefixes?.[lic.id])}
                         </code>
                       </DataTableCell>
                       <DataTableCell className="text-muted-foreground">{lic.product?.name || "-"}</DataTableCell>
@@ -627,7 +629,7 @@ function LicenseDetail({ id, onClose }: { id: string; onClose: () => void }) {
                     <p className="text-muted-foreground">{t("licenses.licenseKey")}</p>
                     <div className="flex items-center gap-2 mt-1">
                       <code className="bg-muted px-2 py-1 rounded text-xs">
-                        {revealedKey ?? maskKey(lic.license_key_hint)}
+                        {revealedKey ?? maskKey(lic.license_key_hint, lic.license_key_prefix)}
                       </code>
                       {!revealedKey && (
                         <Button

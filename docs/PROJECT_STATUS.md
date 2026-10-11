@@ -80,6 +80,16 @@ utilisation hors ligne permanente ensuite (jetons signes), une seule machine a l
 - NON etabli : que cette cause soit celle de Blitz (valeur reelle de la variable et commit construit non visibles depuis cet environnement).
   L'absence de la ligne de demarrage "license key format" dans les journaux Blitz prouverait que le code deploye n'est pas celui de la branche.
 
+### Affichage : prefixe `KG-` sur des cles `ALC-` dans `/admin/licenses` (2026-10-11)
+- Cause : l'interface codait en dur `KG-••••-` (`web/src/pages/admin/licenses.tsx`, `customers.tsx`) et l'API ne renvoyait que les 4 derniers
+  caracteres (`license_key_hints`), sans aucune information de format. Donc un probleme de donnees renvoyees + de masque cote client, pas du CSS.
+- Correction minimale : l'API renvoie en plus `license_key_prefixes` (liste, fiche client) et `license_key_prefix` (detail) = prefixe de la cle
+  (`license.KeyPrefix`, texte avant le premier tiret, 1 a 8 majuscules/chiffres) ; l'interface l'utilise (`ALC-••••-XXXX` ou `KG-••••-XXXX`),
+  avec `KG` en repli pour un serveur plus ancien. La cle complete n'est jamais renvoyee ; `license_key_hint(s)` est inchange.
+- Tests : `TestKeyPrefix` (unitaire) et `TestAdminKeyMaskPrefixMatchesKeyFormat` (PostgreSQL temporaire, chiffrement au repos actif : liste,
+  detail et fiche client, cles ALC et KG, aucune cle complete dans les reponses). Non verifie : rendu dans le navigateur et verification de types
+  TypeScript (pas de `node_modules` dans cet environnement).
+
 ## 4. Decisions prises
 - Le format historique d'ALC fait reference ; Keygate s'adapte, ALC n'est pas modifie.
 - Format ALC limite aux produits listes dans `ALC_KEY_PRODUCT_IDS` (identifiants reels, pas de deduction par le nom).

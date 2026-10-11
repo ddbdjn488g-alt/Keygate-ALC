@@ -159,3 +159,21 @@ func (p KeyPolicy) Generate(productID string) string {
 	}
 	return GenerateKey("")
 }
+
+// KeyPrefix returns the format prefix of a key ("ALC", "KG", ...): the text before
+// the first dash, only when it is 1 to 8 upper-case letters or digits. It is a
+// format marker shared by every key of a product, not part of the secret, and is
+// what admin lists use so the masked label matches the real key format.
+func KeyPrefix(key string) string {
+	i := strings.IndexByte(key, '-')
+	if i < 1 || i > 8 {
+		return ""
+	}
+	for j := 0; j < i; j++ {
+		c := key[j]
+		if !(c >= 'A' && c <= 'Z') && !(c >= '0' && c <= '9') {
+			return ""
+		}
+	}
+	return key[:i]
+}

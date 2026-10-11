@@ -117,3 +117,24 @@ func TestHashKeyALCNormalization(t *testing.T) {
 		t.Fatal("hash must ignore case and surrounding whitespace")
 	}
 }
+
+func TestKeyPrefix(t *testing.T) {
+	for key, want := range map[string]string{
+		GenerateALCKey():                "ALC",
+		GenerateKey(""):                 "KG",
+		GenerateKey("PF"):               "PF",
+		"ALC-AAAA-BBBB-CCCC":            "ALC",
+		"KG-AAAAAAAA-BBBBBBBB-CCCCCCCC": "KG",
+		"":                              "",
+		"NODASH":                        "",
+		"-LEADING":                      "",
+		"toolongprefix-XXXX":            "",
+		"lower-XXXX":                    "",
+		"AB CD-XXXX":                    "",
+		"ALC":                           "",
+	} {
+		if got := KeyPrefix(key); got != want {
+			t.Errorf("KeyPrefix(%q) = %q, want %q", key, got, want)
+		}
+	}
+}
