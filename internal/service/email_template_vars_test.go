@@ -123,3 +123,14 @@ func TestRenderEmail_FallsBackToDefault(t *testing.T) {
 		t.Fatalf("broken custom template not replaced by the default:\n%s", body)
 	}
 }
+
+// An ALC-format key goes through the license e-mail template unchanged (it can be
+// copied from the mail straight into ALC) and the product and plan names are shown.
+func TestRenderLicenseCreated_ALCKeyIntact(t *testing.T) {
+	s := newTemplateTestService()
+	key := "ALC-AB2C-D3EF-GH4J"
+	subject, body := s.RenderLicenseCreated("Autotune Live Control", "ALC Perpetuelle", key, "")
+	if !strings.Contains(body, key) || !strings.Contains(body, "ALC Perpetuelle") || !strings.Contains(subject, "Autotune Live Control") {
+		t.Fatalf("license mail altered or incomplete:\n%s", body)
+	}
+}
