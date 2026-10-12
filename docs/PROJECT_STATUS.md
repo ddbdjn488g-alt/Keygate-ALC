@@ -99,6 +99,14 @@ utilisation hors ligne permanente ensuite (jetons signes), une seule machine a l
 - Verifie (execute) : voir le compte rendu de la mission ; NON verifie : Blitz (instance en veille, non joignable par programme), appareil physique,
   second Mac reel, parcours dans l'interface graphique.
 
+### Echec du test reel sur le Mac (2026-10-12) : cause racine
+- Le serveur Blitz etait bien a jour (`4493a7e`, journal "ALC format enabled") mais n'a recu AUCUNE requete d'activation : ALC n'a jamais lu `server.json`.
+- Cause : sous macOS, JUCE place `userApplicationDataDirectory` dans `~/Library` (et non `~/Library/Application Support`). ALC cherchait donc
+  `~/Library/ALC_License/server.json` ; le fichier etait dans `~/Library/Application Support/ALC_License/`. Configuration absente -> activation locale historique.
+- Correction (branche ALC) : les deux dossiers sont lus ; configuration presente mais inutilisable -> erreur explicite, pas de repli local ;
+  journal `[ALC licence]` sans secret ; messages de renouvellement explicites. Verifie avec le vrai `server.json` de l'utilisateur (lecture seule) et en bout en bout
+  contre un serveur Keygate local.
+
 ## 4. Decisions prises
 - Le format historique d'ALC fait reference ; Keygate s'adapte, ALC n'est pas modifie.
 - Format ALC limite aux produits listes dans `ALC_KEY_PRODUCT_IDS` (identifiants reels, pas de deduction par le nom).

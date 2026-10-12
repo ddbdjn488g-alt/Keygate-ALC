@@ -32,7 +32,10 @@ The private key never leaves the server (`LICENSE_SIGNING_KEY`, 32-byte seed in 
 Keygate: nothing new. Required as before: `LICENSE_SIGNING_KEY` (keep it stable: rotating it invalidates every proof and ALC's configured public key),
 `ALC_KEY_PRODUCT_IDS=<ALC product id>` for the key format, the plan `max_activations = 1` and the plan token TTL (7 days).
 
-ALC (no hard-coded endpoint): `~/Library/Application Support/ALC_License/server.json` (Windows: `%APPDATA%\ALC_License\server.json`)
+ALC (no hard-coded endpoint): `server.json` in `~/Library/ALC_License/` or `~/Library/Application Support/ALC_License/` on macOS (JUCE keeps its
+"application data" in `~/Library`, next to `lk.dat`; both are read, the first wins), `%APPDATA%\ALC_License\server.json` on Windows.
+An existing but unusable file (invalid JSON, non-HTTPS URL, bad public key) is reported to the user and activation is refused: there is no silent
+fallback to local activation. Diagnostics (no key, no secret, no full proof) are written to the console as `[ALC licence] ...`.
 
 ```json
 { "api_url": "https://<keygate host>/api/v1", "public_key": "<64 hex from GET /license/pubkey>", "product_id": "<Keygate product id>" }
