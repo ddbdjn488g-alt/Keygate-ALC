@@ -193,6 +193,7 @@ const en = {
   "licenses.type": "Type",
   "licenses.label": "Label",
   "licenses.lastVerified": "Last Verified",
+  "licenses.activatedAt": "Activated",
   "licenses.noActivations": "No activations yet.",
   "licenses.usageCounters": "Usage Counters",
   "licenses.noUsageCounters": "No usage counters.",

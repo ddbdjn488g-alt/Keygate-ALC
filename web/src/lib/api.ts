@@ -291,9 +291,14 @@ export const admin = {
   // The licence keeps its own shape; only the key is gone, replaced by
   // a last-four hint.
   getLicense: (id: string) =>
-    get<License & { license_key_hint: string; license_key_prefix?: string; key_usable: boolean; key_unusable_reason?: string }>(
-      `/admin/licenses/${id}`,
-    ),
+    get<
+      License & {
+        license_key_hint: string
+        license_key_prefix?: string
+        key_usable: boolean
+        key_unusable_reason?: string
+      }
+    >(`/admin/licenses/${id}`),
   // The key is never in a list or detail payload — one explicit
   // request per key, audited server-side.
   revealLicenseKey: (id: string) => get<{ license_key: string }>(`/admin/licenses/${id}/key`),

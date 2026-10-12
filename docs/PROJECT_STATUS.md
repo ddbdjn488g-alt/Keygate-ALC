@@ -90,6 +90,15 @@ utilisation hors ligne permanente ensuite (jetons signes), une seule machine a l
   detail et fiche client, cles ALC et KG, aucune cle complete dans les reponses). Non verifie : rendu dans le navigateur et verification de types
   TypeScript (pas de `node_modules` dans cet environnement).
 
+### Activation en ligne ALC <-> Keygate (2026-10-12)
+- Constat : Keygate fournissait deja tout le serveur (`/license/activate`, `/verify`, `/pubkey`, jeton Ed25519, limite atomique, idempotence, liberation
+  admin tracee). Ajouts cote Keygate : colonne "Activated" (date d'activation) dans le detail des licences, test d'integration
+  `TestALCOnlineActivationFlow`, documentation `docs/alc-online-activation.md`.
+- Cote ALC (branche `feature/alc-online-license`) : `Ed25519Verify.h`, `LicenseProofCore.h`, `LicenseOnline.h`, adaptation de `LicenseManager.h`,
+  `LicenseScreen.h`, une ligne dans `MainWithScenes.h`, tests dans `Tools/license_tests/`.
+- Verifie (execute) : voir le compte rendu de la mission ; NON verifie : Blitz (instance en veille, non joignable par programme), appareil physique,
+  second Mac reel, parcours dans l'interface graphique.
+
 ## 4. Decisions prises
 - Le format historique d'ALC fait reference ; Keygate s'adapte, ALC n'est pas modifie.
 - Format ALC limite aux produits listes dans `ALC_KEY_PRODUCT_IDS` (identifiants reels, pas de deduction par le nom).

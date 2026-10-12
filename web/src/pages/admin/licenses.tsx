@@ -988,6 +988,7 @@ function LicenseDetail({ id, onClose }: { id: string; onClose: () => void }) {
                               <DataTableHead>{t("licenses.identifier")}</DataTableHead>
                               <DataTableHead>{t("licenses.type")}</DataTableHead>
                               <DataTableHead>{t("licenses.label")}</DataTableHead>
+                              <DataTableHead>{t("licenses.activatedAt")}</DataTableHead>
                               <DataTableHead>{t("licenses.lastVerified")}</DataTableHead>
                               <DataTableHead className="w-12" />
                             </DataTableRow>
@@ -1004,6 +1005,9 @@ function LicenseDetail({ id, onClose }: { id: string; onClose: () => void }) {
                                   <Badge variant="secondary">{act.identifier_type}</Badge>
                                 </DataTableCell>
                                 <DataTableCell className="text-muted-foreground">{act.label || "-"}</DataTableCell>
+                                <DataTableCell className="text-muted-foreground text-xs">
+                                  {formatDate(act.created_at)}
+                                </DataTableCell>
                                 <DataTableCell className="text-muted-foreground text-xs">
                                   {formatDate(act.last_verified)}
                                 </DataTableCell>

@@ -188,6 +188,7 @@ const zh = {
   "licenses.type": "类型",
   "licenses.label": "标签",
   "licenses.lastVerified": "最后验证",
+  "licenses.activatedAt": "激活时间",
   "licenses.noActivations": "暂无激活记录。",
   "licenses.usageCounters": "使用计数器",
   "licenses.noUsageCounters": "暂无使用计数器。",
