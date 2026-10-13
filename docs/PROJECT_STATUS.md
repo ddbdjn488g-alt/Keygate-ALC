@@ -107,6 +107,14 @@ utilisation hors ligne permanente ensuite (jetons signes), une seule machine a l
   journal `[ALC licence]` sans secret ; messages de renouvellement explicites. Verifie avec le vrai `server.json` de l'utilisateur (lecture seule) et en bout en bout
   contre un serveur Keygate local.
 
+### Deploiement OVH (2026-10-13, branche `deploy/ovh-vps`)
+- Prepare et pousse (fork) : `deploy/ovh/` (systemd + PostgreSQL local + Caddy), variable `TRUSTED_PROXIES` (necessaire derriere un proxy local : sans elle tous les
+  clients partagent l'IP 127.0.0.1 pour limites de debit / anti brute-force). Tests Go cibles passes ; release linux/amd64 construite localement (ELF + checksum verifies).
+- NON execute sur le VPS : l'acces SSH par cle n'est pas autorise (`Permission denied (publickey,password)` avec la cle dediee `~/.ssh/alc_ovh_ed25519`) ;
+  aucune commande n'a ete lancee sur 57.131.165.209. Prochaine action : `ssh-copy-id -i ~/.ssh/alc_ovh_ed25519.pub debian@57.131.165.209` (mot de passe saisi par l'utilisateur),
+  puis `deploy/ovh/deploy.sh --bootstrap`.
+- DNS a ajouter (par l'utilisateur) : `api.alc-control.com. A 57.131.165.209`. Aucun DNS modifie.
+
 ## 4. Decisions prises
 - Le format historique d'ALC fait reference ; Keygate s'adapte, ALC n'est pas modifie.
 - Format ALC limite aux produits listes dans `ALC_KEY_PRODUCT_IDS` (identifiants reels, pas de deduction par le nom).
