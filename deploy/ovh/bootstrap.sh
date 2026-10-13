@@ -24,8 +24,11 @@ install -d -m 0750 -o root -g root /etc/keygate
 install -d -m 0700 -o root -g root /var/backups/keygate /var/lib/keygate-backup
 
 say "Deploy tooling -> /opt/keygate/deploy"
-for f in README.md Caddyfile keygate.env.example *.sh *.service *.timer; do
-  [ -e "$SRC/$f" ] && install -m 0755 -o root -g root "$SRC/$f" /opt/keygate/deploy/ || true
+for f in "$SRC/README.md" "$SRC/Caddyfile" "$SRC/keygate.env.example" "$SRC"/*.sh "$SRC"/*.service "$SRC"/*.timer; do
+  [ -f "$f" ] || continue
+  mode=0644
+  case "$f" in *.sh) mode=0755 ;; esac
+  install -m "$mode" -o root -g root "$f" /opt/keygate/deploy/
 done
 for s in backup restore install-release enable-https set-secret smtp-check smtp-test-send; do
   ln -sfn "/opt/keygate/deploy/$s.sh" "/usr/local/sbin/keygate-$s"
