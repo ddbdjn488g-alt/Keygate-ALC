@@ -28,6 +28,13 @@ type Config struct {
 	// separated). Empty: every product keeps the default Keygate key.
 	ALCKeyProductIDs []string
 
+	// TrustedProxies (TRUSTED_PROXIES, comma / space separated CIDRs) are the reverse
+	// proxies whose X-Forwarded-For / X-Real-Ip headers are believed for the client IP
+	// (rate limits, brute-force guard, audit). Empty: the built-in private ranges.
+	// A proxy on the same host (Caddy, nginx) connects from loopback: set
+	// TRUSTED_PROXIES=127.0.0.1/32,::1/128, otherwise every client looks like 127.0.0.1.
+	TrustedProxies []string
+
 	StripeSecretKey     string
 	StripeWebhookSecret string
 	// StripeLivemode tells the webhook handler which environment to
@@ -133,6 +140,7 @@ func Load() (*Config, error) {
 	}
 
 	cfg.ALCKeyProductIDs = ParseProductIDs(os.Getenv("ALC_KEY_PRODUCT_IDS"))
+	cfg.TrustedProxies = ParseProductIDs(os.Getenv("TRUSTED_PROXIES"))
 
 	envVal, envSet := os.LookupEnv("STRIPE_LIVEMODE")
 	cfg.StripeLivemode = deriveLivemode(envVal, envSet, cfg.StripeSecretKey)

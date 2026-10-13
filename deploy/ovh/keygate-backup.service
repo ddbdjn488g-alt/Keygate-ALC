@@ -1,0 +1,6 @@
+[Unit]
+Description=Keygate encrypted database backup
+After=postgresql.service
+[Service]
+Type=oneshot
+ExecStart=/opt/keygate/deploy/backup.sh

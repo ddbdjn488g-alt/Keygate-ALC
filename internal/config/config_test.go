@@ -296,3 +296,17 @@ func TestALCKeyProductIDsTolerantParsing(t *testing.T) {
 		}
 	})
 }
+
+func TestTrustedProxiesFromEnv(t *testing.T) {
+	t.Setenv("TRUSTED_PROXIES", "127.0.0.1/32, ::1/128\n")
+	t.Setenv("DATABASE_URL", "postgres://x")
+	t.Setenv("JWT_SECRET", strings.Repeat("s", 48))
+	t.Setenv("LICENSE_SIGNING_KEY", "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef")
+	cfg, err := Load()
+	if err != nil {
+		t.Fatalf("Load: %v", err)
+	}
+	if len(cfg.TrustedProxies) != 2 || cfg.TrustedProxies[0] != "127.0.0.1/32" || cfg.TrustedProxies[1] != "::1/128" {
+		t.Fatalf("TrustedProxies = %v", cfg.TrustedProxies)
+	}
+}

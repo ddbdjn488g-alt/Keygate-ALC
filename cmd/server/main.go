@@ -592,8 +592,17 @@ func main() {
 	r.Use(gin.LoggerWithFormatter(redactedLogFormatter), redactedRecovery())
 
 	// Trust reverse proxy headers (Traefik, Nginx, etc.) to get real client IP.
-	// Trusts X-Forwarded-For / X-Real-Ip from private network ranges.
-	r.SetTrustedProxies([]string{"10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16", "fc00::/7"})
+	// Trusts X-Forwarded-For / X-Real-Ip from private network ranges, or from
+	// the CIDRs listed in TRUSTED_PROXIES (e.g. loopback for a proxy on this host).
+	proxies, perr := trustedProxyCIDRs(cfg.TrustedProxies)
+	if perr != nil {
+		logger.Error("invalid TRUSTED_PROXIES", "error", perr)
+		os.Exit(1)
+	}
+	if err := r.SetTrustedProxies(proxies); err != nil {
+		logger.Error("cannot apply trusted proxies", "error", err)
+		os.Exit(1)
+	}
 	r.RemoteIPHeaders = []string{"X-Forwarded-For", "X-Real-Ip"}
 
 	r.Use(middleware.RequestID())

@@ -1,0 +1,8 @@
+[Unit]
+Description=Keygate daily backup
+[Timer]
+OnCalendar=*-*-* 03:15:00
+RandomizedDelaySec=15min
+Persistent=true
+[Install]
+WantedBy=timers.target

@@ -1,0 +1,5 @@
+[Unit]
+Description=Keygate health check
+[Service]
+Type=oneshot
+ExecStart=/opt/keygate/deploy/healthcheck.sh

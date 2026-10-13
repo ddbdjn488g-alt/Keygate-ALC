@@ -1,0 +1,22 @@
+# Reverse proxy + automatic HTTPS (Let's Encrypt, HTTP-01 on port 80).
+# The domain below must already point to this server (see README.md) before Caddy is started:
+# enable-https.sh checks it. No access log on purpose: some Keygate URLs carry a license key.
+{
+	email contact@alc-control.com
+}
+
+{$KEYGATE_DOMAIN:api.alc-control.com} {
+	encode zstd gzip
+
+	header {
+		Strict-Transport-Security "max-age=31536000"
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "no-referrer"
+		-Server
+	}
+
+	reverse_proxy 127.0.0.1:9000 {
+		health_uri /health
+		health_interval 30s
+	}
+}
