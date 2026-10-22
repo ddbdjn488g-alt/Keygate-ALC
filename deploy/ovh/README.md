@@ -50,7 +50,9 @@ Stripe is OFF until you enable it: `sudo keygate-set-secret STRIPE_SECRET_KEY` (
 ## Backups and restore
 
 * Daily at ~03:15 (systemd timer): `pg_dump` + the environment file, tar, AES-256 (`/etc/keygate/backup.pass`), verified (decrypt + archive + `pg_restore --list`), in `/var/backups/keygate` (`0700`). Retention: 14 newest + Sunday backups for 8 weeks. Status: `cat /var/lib/keygate-backup/last_success`, `journalctl -t keygate-backup`.
-* **Copy `/etc/keygate/backup.pass` off the server** (password manager), and fetch backups regularly: `scp -i ~/.ssh/alc_ovh_ed25519 debian@57.131.165.209:/var/backups/keygate/<file> .` (needs `sudo chmod` or a `sudo cat` pipe since the directory is root-only: `ssh ... 'sudo cat /var/backups/keygate/<file>' > <file>`). OVH's own VPS backup option is a complement, not a replacement.
+* After each successful backup, the script stages only the retained encrypted archives and SHA-256 sidecars in `/home/debian/keygate-export` (`0700`, `debian:debian`); the decryption passphrase is never copied there.
+* The Mac sync script is `deploy/ovh/mac-sync-backups.sh`. Its dedicated key (`~/.ssh/keygate_backup_sync_ed25519`) is forced to `/opt/keygate/deploy/keygate-backup-export.sh` through a restricted `authorized_keys` entry. It can export only encrypted archive files and checksums, not open a shell or forward ports. The LaunchAgent `com.alc.keygate-backup-sync` runs daily at 07:30 local time and syncs verified files to iCloud Drive `Keygate-Backups`. The local archive set mirrors server retention only after every incoming checksum validates.
+* **Still required: copy `/etc/keygate/backup.pass` into a trusted password manager or another secure recovery store outside the VPS.** Never paste it into chat, a ticket, or a log. The current encrypted archive is not recoverable without it. OVH's own VPS backup option is a complement, not a replacement.
 * Test a backup (touches nothing live): `sudo keygate-restore /var/backups/keygate/<file> --test`.
 * Restore for real: `sudo keygate-restore <file> --apply --yes [--with-env]` (the current database is kept under a new name, never dropped).
 

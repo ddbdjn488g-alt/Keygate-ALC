@@ -52,7 +52,20 @@ for f in "${files[@]}"; do
   rm -f "$f" "$f.sha256"
 done
 
+# 5. Stage retained encrypted archives for the Mac's restricted offsite sync.
+# This directory contains encrypted archives and checksums only, never the passphrase.
+EXPORT_DIR=${EXPORT_DIR:-/home/debian/keygate-export}
+id debian >/dev/null 2>&1 || { echo "missing debian account for encrypted export" >&2; exit 1; }
+install -d -o debian -g debian -m 0700 "$EXPORT_DIR"
+find "$EXPORT_DIR" -maxdepth 1 -type f \
+  \( -name 'keygate-*.tar.enc' -o -name 'keygate-*.tar.enc.sha256' \) -delete
+while IFS= read -r f; do
+  install -o debian -g debian -m 0600 "$f" "$EXPORT_DIR/$(basename "$f")"
+  [ ! -f "$f.sha256" ] || install -o debian -g debian -m 0600 "$f.sha256" "$EXPORT_DIR/$(basename "$f").sha256"
+done < <(find "$BACKUP_DIR" -maxdepth 1 -type f -name 'keygate-*.tar.enc' -print | sort)
+
 date -u +%FT%TZ > "$STATE_DIR/last_success"
 size=$(du -h "$out" | cut -f1)
-logger -t keygate-backup "backup OK: $(basename "$out") ($size)"
+logger -t keygate-backup "backup OK: $(basename "$out") ($size); encrypted export staging refreshed"
 echo "backup OK: $out ($size)"
+echo "encrypted export staging refreshed: $EXPORT_DIR"
