@@ -15,6 +15,10 @@
 		-Server
 	}
 
+	# Prometheus metrics (business counters, admin route timings) stay local: scrape 127.0.0.1:9000/metrics on the server.
+	@internal path /metrics /metrics/*
+	respond @internal 404
+
 	reverse_proxy 127.0.0.1:9000 {
 		health_uri /health
 		health_interval 30s
